@@ -7,9 +7,12 @@ use plonky2::iop::witness::Witness;
 use plonky2::plonk::circuit_builder::CircuitBuilder;
 
 use crate::biguint::{BigUintTarget, CircuitBuilderBiguint, WitnessBigUint};
-use crate::u32::arithmetic_u32::CircuitBuilderU32;
+use crate::u32::arithmetic_u32::{CircuitBuilderU32, U32Target};
 use crate::u32::witness::WitnessU32;
 
+
+
+pub type Hash256Target = [U32Target; 8];
 #[derive(Clone, Debug)]
 pub struct HashTarget {
     pub input_bits: usize,
@@ -27,6 +30,13 @@ pub struct HashInputTarget {
 
 pub type HashOutputTarget = BigUintTarget;
 
+fn read_u32_be_at(array: &[u8], index: usize) -> u32 {
+    ((array[index] as u32) << 24) +
+    ((array[index+1] as u32) << 16) +
+    ((array[index+2] as u32) <<  8) +
+    ((array[index+3] as u32) <<  0)
+}
+
 pub trait WitnessHash<F: PrimeField64>: Witness<F> {
     fn set_biguint_u32_be_target(&mut self, target: &BigUintTarget, value: &BigUint);
 
@@ -37,6 +47,7 @@ pub trait WitnessHash<F: PrimeField64>: Witness<F> {
     fn set_hash_output_le_target(&mut self, target: &HashOutputTarget, value: &[u8]);
 
     fn set_hash_blocks_target(&mut self, target: &HashInputTarget, num_blocks: usize);
+    fn set_hash256_target(&mut self, target: &Hash256Target, value: &[u8; 32]);
 }
 
 impl<T: Witness<F>, F: PrimeField64> WitnessHash<F> for T {
@@ -74,6 +85,17 @@ impl<T: Witness<F>, F: PrimeField64> WitnessHash<F> for T {
             self.set_bool_target(*t, i < num_blocks - 1);
         }
     }
+
+    fn set_hash256_target(&mut self, target: &Hash256Target, value: &[u8; 32]) {
+        self.set_u32_target(target[0], read_u32_be_at(value, 0));
+        self.set_u32_target(target[1], read_u32_be_at(value, 4));
+        self.set_u32_target(target[2], read_u32_be_at(value, 8));
+        self.set_u32_target(target[3], read_u32_be_at(value, 12));
+        self.set_u32_target(target[4], read_u32_be_at(value, 16));
+        self.set_u32_target(target[5], read_u32_be_at(value, 20));
+        self.set_u32_target(target[6], read_u32_be_at(value, 24));
+        self.set_u32_target(target[7], read_u32_be_at(value, 28));
+    }
 }
 
 pub trait CircuitBuilderHash<F: RichField + Extendable<D>, const D: usize> {
@@ -109,6 +131,8 @@ pub trait CircuitBuilderHash<F: RichField + Extendable<D>, const D: usize> {
         blocks_input_bits: usize,
         output_bits: usize,
     ) -> HashTarget;
+    fn add_virtual_hash256_target(&mut self) -> Hash256Target;
+    fn connect_hash256(&mut self, x: Hash256Target, y: Hash256Target);
 }
 
 impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderHash<F, D>
@@ -193,4 +217,30 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderHash<F, D>
 
         hash_target
     }
+
+    fn add_virtual_hash256_target(&mut self) -> Hash256Target{
+        [
+            self.add_virtual_u32_target(),
+            self.add_virtual_u32_target(),
+            self.add_virtual_u32_target(),
+            self.add_virtual_u32_target(),
+            
+            self.add_virtual_u32_target(),
+            self.add_virtual_u32_target(),
+            self.add_virtual_u32_target(),
+            self.add_virtual_u32_target(),
+        ]
+    }
+
+    fn connect_hash256(&mut self, x: Hash256Target, y: Hash256Target) {
+        self.connect_u32(x[0], y[0]);
+        self.connect_u32(x[1], y[1]);
+        self.connect_u32(x[2], y[2]);
+        self.connect_u32(x[3], y[3]);
+        self.connect_u32(x[4], y[4]);
+        self.connect_u32(x[5], y[5]);
+        self.connect_u32(x[6], y[6]);
+        self.connect_u32(x[7], y[7]);
+    }
 }
+
