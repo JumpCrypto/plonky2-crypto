@@ -24,7 +24,15 @@ cargo test --release -- --nocapture
 
 Hash functions:
 - [x] Sha256
+    * [x] Hash Arbitrary Length Data
+    * [x] Hash Two to One (For use with Merkle Proofs)
+    * [x] Merkle Proof Gadget
+    * [x] Delta Merkle Proof Gadget
 - [x] Keccak256
+    * [x] Hash Arbitrary Length Data
+    * [ ] Hash Two to One (For use with Merkle Proofs)
+    * [ ] Merkle Proof Gadget
+    * [ ] Delta Merkle Proof Gadget
 
 Integer arithmetic:
 - [x] Uint32 arithmetic ops (add, mul, ...)
