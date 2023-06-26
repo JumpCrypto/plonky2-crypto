@@ -28,6 +28,11 @@ Hash functions:
     * [x] Hash Two to One (For use with Merkle Proofs)
     * [x] Merkle Proof Gadget
     * [x] Delta Merkle Proof Gadget
+- [x] Sha256-192 (Sha256 Truncated to 192 Bits)
+    * [x] Hash Arbitrary Length Data
+    * [x] Hash Two to One (For use with Merkle Proofs)
+    * [x] Merkle Proof Gadget
+    * [x] Delta Merkle Proof Gadget
 - [x] Keccak256
     * [x] Hash Arbitrary Length Data
     * [ ] Hash Two to One (For use with Merkle Proofs)

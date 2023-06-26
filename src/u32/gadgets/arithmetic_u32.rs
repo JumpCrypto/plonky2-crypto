@@ -5,7 +5,7 @@ use core::marker::PhantomData;
 use plonky2::field::extension::Extendable;
 use plonky2::hash::hash_types::RichField;
 use plonky2::iop::generator::{GeneratedValues, SimpleGenerator};
-use plonky2::iop::target::Target;
+use plonky2::iop::target::{Target, BoolTarget};
 use plonky2::iop::witness::{PartitionWitness, Witness};
 use plonky2::plonk::circuit_builder::CircuitBuilder;
 
@@ -60,6 +60,9 @@ pub trait CircuitBuilderU32<F: RichField + Extendable<D>, const D: usize> {
 
     // Returns x - y - borrow, as a pair (result, borrow), where borrow is 0 or 1 depending on whether borrowing from the next digit is required (iff y + borrow > x).
     fn sub_u32(&mut self, x: U32Target, y: U32Target, borrow: U32Target) -> (U32Target, U32Target);
+
+    // Selects `x` or `y` based on `b`, i.e., this returns `if b { x } else { y }`.
+    fn select_u32(&mut self, b: BoolTarget, x: U32Target, y: U32Target) -> U32Target;
 }
 
 impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderU32<F, D>
@@ -233,6 +236,10 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderU32<F, D>
         let output_borrow = U32Target(Target::wire(row, gate.wire_ith_output_borrow(copy)));
 
         (output_result, output_borrow)
+    }
+
+    fn select_u32(&mut self, b: BoolTarget, x: U32Target, y: U32Target) -> U32Target {
+        U32Target(self.select(b, x.0, y.0))
     }
 }
 
