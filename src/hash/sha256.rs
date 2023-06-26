@@ -380,6 +380,8 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderHashSha2<F, D>
 
 #[cfg(test)]
 mod tests {
+    use std::time::Instant;
+
     use hex;
     use num::BigUint;
     use plonky2::iop::witness::PartialWitness;
@@ -477,7 +479,7 @@ mod tests {
         let copy_constraints = "<private>";
         let data = builder.build::<C>();
         println!(
-            "sha256_two_to_one num_gates={}, copy_constraints={}, quotient_degree_factor={}",
+            "two_to_one_sha256 num_gates={}, copy_constraints={}, quotient_degree_factor={}",
             num_gates, copy_constraints, data.common.quotient_degree_factor
         );
 
@@ -492,8 +494,10 @@ mod tests {
             pw.set_hash256_target(&right_target, &right.0);
             pw.set_hash256_target(&expected_output_target, &expected_output.0);
 
+            let start = Instant::now();
             let proof = data.prove(pw).unwrap();
-            // println!("sha256 proof.public_inputs =\n{:08x?}", proof.public_inputs);
+            let end = start.elapsed();
+            println!("two_to_one_sha256 proved in {}ms", end.as_millis());
             assert!(data.verify(proof).is_ok());
         }
     }

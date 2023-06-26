@@ -241,7 +241,7 @@ mod tests {
             let start = Instant::now();
             let proof = data.prove(pw).unwrap();
             let end = start.elapsed();
-            println!("two_to_one_truncated_sha256 of proved in {}ms", end.as_millis());
+            println!("two_to_one_truncated_sha256 proved in {}ms", end.as_millis());
             assert!(data.verify(proof).is_ok());
         }
     }
