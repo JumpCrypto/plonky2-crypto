@@ -216,10 +216,10 @@ mod tests {
         pw.set_hash256_target(&expected_root_target, &proof.root.0);
 
         let start_time = std::time::Instant::now();
-
         let proof = data.prove(pw).unwrap();
         let duration_ms = start_time.elapsed().as_millis();
         println!("proved in {}ms", duration_ms);
+
         assert!(data.verify(proof).is_ok());
     }
 
