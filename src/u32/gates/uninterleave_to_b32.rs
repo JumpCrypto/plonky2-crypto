@@ -8,7 +8,9 @@ use plonky2::gates::packed_util::PackedEvaluableBase;
 use plonky2::gates::util::StridedConstraintConsumer;
 use plonky2::hash::hash_types::RichField;
 use plonky2::iop::ext_target::ExtensionTarget;
-use plonky2::iop::generator::{GeneratedValues, SimpleGenerator, WitnessGenerator};
+use plonky2::iop::generator::{
+    GeneratedValues, SimpleGenerator, WitnessGeneratorRef,
+};
 use plonky2::iop::target::Target;
 use plonky2::iop::wire::Wire;
 use plonky2::iop::witness::{PartitionWitness, Witness, WitnessWrite};
@@ -19,6 +21,7 @@ use plonky2::plonk::vars::{
     EvaluationTargets, EvaluationVars, EvaluationVarsBase, EvaluationVarsBaseBatch,
     EvaluationVarsBasePacked,
 };
+use plonky2::util::serialization::{Buffer, IoResult};
 
 /// TODO: This code is grossly redundant to uninterleave_to_u32.rs, the diff is literally four lines (the calculation of coeff)
 /// Just wanted something up quickly, a cleaner more future-proof solution would be to make this one gate with
@@ -219,10 +222,10 @@ impl<F: RichField + Extendable<D>, const D: usize> Gate<F, D> for UninterleaveTo
         self.eval_unfiltered_base_batch_packed(vars_base)
     }
 
-    fn generators(&self, row: usize, _local_constants: &[F]) -> Vec<Box<dyn WitnessGenerator<F>>> {
+    fn generators(&self, row: usize, _local_constants: &[F]) -> Vec<WitnessGeneratorRef<F>> {
         (0..self.num_ops)
             .map(|i| {
-                let g: Box<dyn WitnessGenerator<F>> = Box::new(
+                let g: WitnessGeneratorRef<F> = WitnessGeneratorRef::new(
                     UninterleaveToB32Generator {
                         gate: *self,
                         row,
@@ -249,6 +252,17 @@ impl<F: RichField + Extendable<D>, const D: usize> Gate<F, D> for UninterleaveTo
 
     fn num_constraints(&self) -> usize {
         self.num_ops * (Self::NUM_BITS + 1 + 2)
+    }
+
+    fn serialize(&self, _dst: &mut Vec<u8>) -> IoResult<()> {
+        todo!()
+    }
+
+    fn deserialize(_src: &mut Buffer) -> IoResult<Self>
+    where
+        Self: Sized,
+    {
+        todo!()
     }
 }
 
@@ -310,6 +324,10 @@ pub struct UninterleaveToB32Generator {
 
 // Populate the bit wires and the x_interleaved wire, given that the x wire's value has been set
 impl<F: RichField> SimpleGenerator<F> for UninterleaveToB32Generator {
+    fn id(&self) -> String {
+        format!("uninterleave_to_b32_{}_{}", self.row, self.i)
+    }
+
     fn dependencies(&self) -> Vec<Target> {
         let local_target = |column| Target::wire(self.row, column);
 
@@ -353,6 +371,17 @@ impl<F: RichField> SimpleGenerator<F> for UninterleaveToB32Generator {
         let x_odds_wire = local_wire(self.gate.wire_ith_x_odds(self.i));
         out_buffer.set_wire(x_evens_wire, F::from_canonical_u64(x_evens));
         out_buffer.set_wire(x_odds_wire, F::from_canonical_u64(x_odds));
+    }
+
+    fn serialize(&self, _dst: &mut Vec<u8>) -> IoResult<()> {
+        todo!()
+    }
+
+    fn deserialize(_src: &mut Buffer) -> IoResult<Self>
+    where
+        Self: Sized,
+    {
+        todo!()
     }
 }
 

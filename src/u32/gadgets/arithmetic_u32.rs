@@ -8,6 +8,8 @@ use plonky2::iop::generator::{GeneratedValues, SimpleGenerator};
 use plonky2::iop::target::Target;
 use plonky2::iop::witness::{PartitionWitness, Witness};
 use plonky2::plonk::circuit_builder::CircuitBuilder;
+use plonky2::util::serialization::{Buffer, IoResult};
+
 
 use crate::u32::gates::add_many_u32::U32AddManyGate;
 use crate::u32::gates::arithmetic_u32::U32ArithmeticGate;
@@ -247,6 +249,10 @@ struct SplitToU32Generator<F: RichField + Extendable<D>, const D: usize> {
 impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F>
     for SplitToU32Generator<F, D>
 {
+    fn id(&self) -> String {
+        format!("split_to_u32_: {:?}", self.x)
+    }
+
     fn dependencies(&self) -> Vec<Target> {
         vec![self.x]
     }
@@ -259,6 +265,17 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F>
 
         out_buffer.set_u32_target(self.low, low);
         out_buffer.set_u32_target(self.high, high);
+    }
+
+    fn serialize(&self, _dst: &mut Vec<u8>) -> IoResult<()> {
+        todo!()
+    }
+
+    fn deserialize(_src: &mut Buffer) -> IoResult<Self>
+    where
+        Self: Sized,
+    {
+        todo!()
     }
 }
 

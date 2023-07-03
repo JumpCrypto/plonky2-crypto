@@ -10,6 +10,8 @@ use plonky2::iop::generator::{GeneratedValues, SimpleGenerator};
 use plonky2::iop::target::{BoolTarget, Target};
 use plonky2::iop::witness::{PartitionWitness, Witness};
 use plonky2::plonk::circuit_builder::CircuitBuilder;
+use plonky2::util::serialization::{Buffer, IoResult};
+
 
 use crate::u32::gadgets::arithmetic_u32::{CircuitBuilderU32, U32Target};
 use crate::u32::gadgets::multiple_comparison::list_le_u32_circuit;
@@ -442,6 +444,13 @@ struct BigUintDivRemGenerator<F: RichField + Extendable<D>, const D: usize> {
 impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F>
     for BigUintDivRemGenerator<F, D>
 {
+    fn id(&self) -> String {
+        format!(
+            "BigUintDivRemGenerator({:?}, {:?}, {:?}, {:?})",
+            self.a, self.b, self.div, self.rem
+        )
+    }
+
     fn dependencies(&self) -> Vec<Target> {
         self.a
             .limbs
@@ -458,6 +467,17 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F>
 
         out_buffer.set_biguint_target(&self.div, &div);
         out_buffer.set_biguint_target(&self.rem, &rem);
+    }
+
+    fn serialize(&self, _dst: &mut Vec<u8>) -> IoResult<()> {
+        todo!()
+    }
+
+    fn deserialize(_src: &mut Buffer) -> IoResult<Self>
+    where
+        Self: Sized,
+    {
+        todo!()
     }
 }
 
