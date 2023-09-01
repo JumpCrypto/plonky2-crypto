@@ -1,9 +1,9 @@
 use alloc::vec;
 use alloc::vec::Vec;
+use core::marker::PhantomData;
 use itertools::Itertools;
 use plonky2::plonk::circuit_data::CommonCircuitData;
-use plonky2::util::serialization::{IoResult, Write, Buffer, Read};
-use core::marker::PhantomData;
+use plonky2::util::serialization::{Buffer, IoResult, Read, Write};
 
 use num::{BigUint, Integer, Zero};
 use plonky2::field::extension::Extendable;
@@ -40,7 +40,7 @@ impl BigUintTarget {
         Ok(Self {
             limbs: limbs.into_iter().map(U32Target).collect(),
         })
-    }    
+    }
 }
 
 pub trait CircuitBuilderBiguint<F: RichField + Extendable<D>, const D: usize> {
@@ -496,7 +496,7 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F, D>
             rem,
             _phantom: PhantomData,
         })
-    }  
+    }
 }
 
 #[cfg(test)]
