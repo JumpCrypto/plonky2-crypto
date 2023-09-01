@@ -1,8 +1,9 @@
-use alloc::boxed::Box;
 use alloc::string::String;
 use alloc::vec::Vec;
 use alloc::{format, vec};
 use core::marker::PhantomData;
+use plonky2::plonk::circuit_data::CommonCircuitData;
+use plonky2::util::serialization::{Buffer, IoResult, Read, Write};
 
 use plonky2::field::extension::Extendable;
 use plonky2::field::packed::PackedField;
@@ -12,7 +13,7 @@ use plonky2::gates::packed_util::PackedEvaluableBase;
 use plonky2::gates::util::StridedConstraintConsumer;
 use plonky2::hash::hash_types::RichField;
 use plonky2::iop::ext_target::ExtensionTarget;
-use plonky2::iop::generator::{GeneratedValues, SimpleGenerator, WitnessGenerator};
+use plonky2::iop::generator::{GeneratedValues, SimpleGenerator, WitnessGeneratorRef};
 use plonky2::iop::target::Target;
 use plonky2::iop::wire::Wire;
 use plonky2::iop::witness::{PartitionWitness, Witness, WitnessWrite};
@@ -96,6 +97,22 @@ impl<F: RichField + Extendable<D>, const D: usize> ComparisonGate<F, D> {
 impl<F: RichField + Extendable<D>, const D: usize> Gate<F, D> for ComparisonGate<F, D> {
     fn id(&self) -> String {
         format!("{self:?}<D={D}>")
+    }
+
+    fn serialize(&self, dst: &mut Vec<u8>, _common_data: &CommonCircuitData<F, D>) -> IoResult<()> {
+        dst.write_usize(self.num_bits)?;
+        dst.write_usize(self.num_chunks)?;
+        Ok(())
+    }
+
+    fn deserialize(src: &mut Buffer, _common_data: &CommonCircuitData<F, D>) -> IoResult<Self> {
+        let num_bits = src.read_usize()?;
+        let num_chunks = src.read_usize()?;
+        Ok(Self {
+            num_bits,
+            num_chunks,
+            _phantom: PhantomData,
+        })
     }
 
     fn eval_unfiltered(&self, vars: EvaluationVars<F, D>) -> Vec<F::Extension> {
@@ -287,12 +304,12 @@ impl<F: RichField + Extendable<D>, const D: usize> Gate<F, D> for ComparisonGate
         constraints
     }
 
-    fn generators(&self, row: usize, _local_constants: &[F]) -> Vec<Box<dyn WitnessGenerator<F>>> {
+    fn generators(&self, row: usize, _local_constants: &[F]) -> Vec<WitnessGeneratorRef<F, D>> {
         let gen = ComparisonGenerator::<F, D> {
             row,
             gate: self.clone(),
         };
-        vec![Box::new(gen.adapter())]
+        vec![WitnessGeneratorRef::new(gen.adapter())]
     }
 
     fn num_wires(&self) -> usize {
@@ -401,9 +418,13 @@ struct ComparisonGenerator<F: RichField + Extendable<D>, const D: usize> {
     gate: ComparisonGate<F, D>,
 }
 
-impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F>
+impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F, D>
     for ComparisonGenerator<F, D>
 {
+    fn id(&self) -> String {
+        "ComparisonGenerator".to_string()
+    }
+
     fn dependencies(&self) -> Vec<Target> {
         let local_target = |column| Target::wire(self.row, column);
 
@@ -511,6 +532,17 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F>
                 msd_bit,
             );
         }
+    }
+
+    fn serialize(&self, dst: &mut Vec<u8>, common_data: &CommonCircuitData<F, D>) -> IoResult<()> {
+        self.gate.serialize(dst, common_data)?;
+        dst.write_usize(self.row)
+    }
+
+    fn deserialize(src: &mut Buffer, common_data: &CommonCircuitData<F, D>) -> IoResult<Self> {
+        let gate = ComparisonGate::deserialize(src, common_data)?;
+        let row = src.read_usize()?;
+        Ok(Self { gate, row })
     }
 }
 

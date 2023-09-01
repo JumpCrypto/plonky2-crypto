@@ -10,8 +10,6 @@ use crate::biguint::{BigUintTarget, CircuitBuilderBiguint, WitnessBigUint};
 use crate::u32::arithmetic_u32::{CircuitBuilderU32, U32Target};
 use crate::u32::witness::WitnessU32;
 
-
-
 pub type Hash256Target = [U32Target; 8];
 #[derive(Clone, Debug)]
 pub struct HashTarget {
@@ -31,10 +29,10 @@ pub struct HashInputTarget {
 pub type HashOutputTarget = BigUintTarget;
 
 fn read_u32_be_at(array: &[u8], index: usize) -> u32 {
-    ((array[index] as u32) << 24) +
-    ((array[index+1] as u32) << 16) +
-    ((array[index+2] as u32) <<  8) +
-    ((array[index+3] as u32) <<  0)
+    ((array[index] as u32) << 24)
+        + ((array[index + 1] as u32) << 16)
+        + ((array[index + 2] as u32) << 8)
+        + ((array[index + 3] as u32) << 0)
 }
 
 pub trait WitnessHash<F: PrimeField64>: Witness<F> {
@@ -218,13 +216,12 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderHash<F, D>
         hash_target
     }
 
-    fn add_virtual_hash256_target(&mut self) -> Hash256Target{
+    fn add_virtual_hash256_target(&mut self) -> Hash256Target {
         [
             self.add_virtual_u32_target(),
             self.add_virtual_u32_target(),
             self.add_virtual_u32_target(),
             self.add_virtual_u32_target(),
-            
             self.add_virtual_u32_target(),
             self.add_virtual_u32_target(),
             self.add_virtual_u32_target(),
@@ -243,4 +240,3 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderHash<F, D>
         self.connect_u32(x[7], y[7]);
     }
 }
-

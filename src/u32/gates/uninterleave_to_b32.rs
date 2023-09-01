@@ -8,17 +8,18 @@ use plonky2::gates::packed_util::PackedEvaluableBase;
 use plonky2::gates::util::StridedConstraintConsumer;
 use plonky2::hash::hash_types::RichField;
 use plonky2::iop::ext_target::ExtensionTarget;
-use plonky2::iop::generator::{GeneratedValues, SimpleGenerator, WitnessGenerator};
+use plonky2::iop::generator::{GeneratedValues, SimpleGenerator, WitnessGeneratorRef};
 use plonky2::iop::target::Target;
 use plonky2::iop::wire::Wire;
 use plonky2::iop::witness::{PartitionWitness, Witness, WitnessWrite};
 use plonky2::plonk::circuit_builder::CircuitBuilder;
-use plonky2::plonk::circuit_data::CircuitConfig;
+use plonky2::plonk::circuit_data::{CircuitConfig, CommonCircuitData};
 use plonky2::plonk::plonk_common::{reduce_with_powers, reduce_with_powers_ext_circuit};
 use plonky2::plonk::vars::{
     EvaluationTargets, EvaluationVars, EvaluationVarsBase, EvaluationVarsBaseBatch,
     EvaluationVarsBasePacked,
 };
+use plonky2::util::serialization::{Buffer, IoResult, Read, Write};
 
 /// TODO: This code is grossly redundant to uninterleave_to_u32.rs, the diff is literally four lines (the calculation of coeff)
 /// Just wanted something up quickly, a cleaner more future-proof solution would be to make this one gate with
@@ -96,6 +97,15 @@ impl UninterleaveToB32Gate {
 impl<F: RichField + Extendable<D>, const D: usize> Gate<F, D> for UninterleaveToB32Gate {
     fn id(&self) -> String {
         format!("{self:?}")
+    }
+
+    fn serialize(&self, dst: &mut Vec<u8>, _common_data: &CommonCircuitData<F, D>) -> IoResult<()> {
+        dst.write_usize(self.num_ops)
+    }
+
+    fn deserialize(src: &mut Buffer, _common_data: &CommonCircuitData<F, D>) -> IoResult<Self> {
+        let num_ops = src.read_usize()?;
+        Ok(Self { num_ops })
     }
 
     fn eval_unfiltered(&self, vars: EvaluationVars<F, D>) -> Vec<F::Extension> {
@@ -219,18 +229,17 @@ impl<F: RichField + Extendable<D>, const D: usize> Gate<F, D> for UninterleaveTo
         self.eval_unfiltered_base_batch_packed(vars_base)
     }
 
-    fn generators(&self, row: usize, _local_constants: &[F]) -> Vec<Box<dyn WitnessGenerator<F>>> {
+    fn generators(&self, row: usize, _local_constants: &[F]) -> Vec<WitnessGeneratorRef<F, D>> {
         (0..self.num_ops)
             .map(|i| {
-                let g: Box<dyn WitnessGenerator<F>> = Box::new(
+                WitnessGeneratorRef::new(
                     UninterleaveToB32Generator {
                         gate: *self,
                         row,
                         i,
                     }
                     .adapter(),
-                );
-                g
+                )
             })
             .collect()
     }
@@ -309,7 +318,13 @@ pub struct UninterleaveToB32Generator {
 }
 
 // Populate the bit wires and the x_interleaved wire, given that the x wire's value has been set
-impl<F: RichField> SimpleGenerator<F> for UninterleaveToB32Generator {
+impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F, D>
+    for UninterleaveToB32Generator
+{
+    fn id(&self) -> String {
+        "UninterleaveToB32Generator".to_string()
+    }
+
     fn dependencies(&self) -> Vec<Target> {
         let local_target = |column| Target::wire(self.row, column);
 
@@ -353,6 +368,19 @@ impl<F: RichField> SimpleGenerator<F> for UninterleaveToB32Generator {
         let x_odds_wire = local_wire(self.gate.wire_ith_x_odds(self.i));
         out_buffer.set_wire(x_evens_wire, F::from_canonical_u64(x_evens));
         out_buffer.set_wire(x_odds_wire, F::from_canonical_u64(x_odds));
+    }
+
+    fn serialize(&self, dst: &mut Vec<u8>, common_data: &CommonCircuitData<F, D>) -> IoResult<()> {
+        self.gate.serialize(dst, common_data)?;
+        dst.write_usize(self.row)?;
+        dst.write_usize(self.i)
+    }
+
+    fn deserialize(src: &mut Buffer, common_data: &CommonCircuitData<F, D>) -> IoResult<Self> {
+        let gate = UninterleaveToB32Gate::deserialize(src, common_data)?;
+        let row = src.read_usize()?;
+        let i = src.read_usize()?;
+        Ok(Self { gate, row, i })
     }
 }
 
