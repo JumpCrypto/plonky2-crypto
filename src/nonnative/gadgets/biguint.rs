@@ -1,5 +1,8 @@
 use alloc::vec;
 use alloc::vec::Vec;
+use itertools::Itertools;
+use plonky2::plonk::circuit_data::CommonCircuitData;
+use plonky2::util::serialization::{IoResult, Write, Buffer, Read};
 use core::marker::PhantomData;
 
 use num::{BigUint, Integer, Zero};
@@ -28,6 +31,16 @@ impl BigUintTarget {
     pub fn get_limb(&self, i: usize) -> U32Target {
         self.limbs[i]
     }
+
+    pub fn write_to_serializer(&self, dst: &mut Vec<u8>) -> IoResult<()> {
+        dst.write_target_vec(&self.limbs.iter().map(|l| l.0).collect_vec())
+    }
+    pub fn deserialize(src: &mut Buffer) -> IoResult<Self> {
+        let limbs = src.read_target_vec()?;
+        Ok(Self {
+            limbs: limbs.into_iter().map(U32Target).collect(),
+        })
+    }    
 }
 
 pub trait CircuitBuilderBiguint<F: RichField + Extendable<D>, const D: usize> {
@@ -439,9 +452,13 @@ struct BigUintDivRemGenerator<F: RichField + Extendable<D>, const D: usize> {
     _phantom: PhantomData<F>,
 }
 
-impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F>
+impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F, D>
     for BigUintDivRemGenerator<F, D>
 {
+    fn id(&self) -> String {
+        "BigUintDivRemGenerator".to_string()
+    }
+
     fn dependencies(&self) -> Vec<Target> {
         self.a
             .limbs
@@ -459,6 +476,27 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F>
         out_buffer.set_biguint_target(&self.div, &div);
         out_buffer.set_biguint_target(&self.rem, &rem);
     }
+
+    fn serialize(&self, dst: &mut Vec<u8>, _common_data: &CommonCircuitData<F, D>) -> IoResult<()> {
+        self.a.write_to_serializer(dst)?;
+        self.b.write_to_serializer(dst)?;
+        self.div.write_to_serializer(dst)?;
+        self.rem.write_to_serializer(dst)
+    }
+
+    fn deserialize(src: &mut Buffer, _common_data: &CommonCircuitData<F, D>) -> IoResult<Self> {
+        let a = BigUintTarget::deserialize(src)?;
+        let b = BigUintTarget::deserialize(src)?;
+        let div = BigUintTarget::deserialize(src)?;
+        let rem = BigUintTarget::deserialize(src)?;
+        Ok(Self {
+            a,
+            b,
+            div,
+            rem,
+            _phantom: PhantomData,
+        })
+    }  
 }
 
 #[cfg(test)]

@@ -144,9 +144,9 @@ impl DeltaMerkleProofSha256Gadget {
 #[cfg(test)]
 mod tests {
 
+    use crate::hash::merkle_utils::{DeltaMerkleProof256, MerkleProof256};
+    use crate::hash::sha256_merkle::{DeltaMerkleProofSha256Gadget, MerkleProofSha256Gadget};
     use crate::hash::{CircuitBuilderHash, WitnessHash};
-    use crate::hash::merkle_utils::{MerkleProof256, DeltaMerkleProof256};
-    use crate::hash::sha256_merkle::{MerkleProofSha256Gadget, DeltaMerkleProofSha256Gadget};
     use plonky2::iop::witness::PartialWitness;
     use plonky2::plonk::circuit_builder::CircuitBuilder;
     use plonky2::plonk::circuit_data::CircuitConfig;
@@ -223,33 +223,32 @@ mod tests {
         assert!(data.verify(proof).is_ok());
     }
 
-
     #[test]
     fn test_verify_small_delta_merkle_proof() {
-      // build circuit once
-      const D: usize = 2;
-      type C = PoseidonGoldilocksConfig;
-      type F = <C as GenericConfig<D>>::F;
+        // build circuit once
+        const D: usize = 2;
+        type C = PoseidonGoldilocksConfig;
+        type F = <C as GenericConfig<D>>::F;
 
-      let config = CircuitConfig::standard_recursion_config();
-      let mut builder = CircuitBuilder::<F, D>::new(config);
+        let config = CircuitConfig::standard_recursion_config();
+        let mut builder = CircuitBuilder::<F, D>::new(config);
 
-      let merkle_proof_gadget = DeltaMerkleProofSha256Gadget::add_virtual_to(&mut builder, 3);
-      let expected_old_root_target = builder.add_virtual_hash256_target();
-      let expected_new_root_target = builder.add_virtual_hash256_target();
-      builder.connect_hash256(expected_old_root_target, merkle_proof_gadget.old_root);
-      builder.connect_hash256(expected_new_root_target, merkle_proof_gadget.new_root);
-      
-      let num_gates = builder.num_gates();
-      // let copy_constraints = builder.copy_constraints.len();
-      let data = builder.build::<C>();
-      println!(
-          "circuit num_gates={}, quotient_degree_factor={}",
-          num_gates, data.common.quotient_degree_factor
-      );
+        let merkle_proof_gadget = DeltaMerkleProofSha256Gadget::add_virtual_to(&mut builder, 3);
+        let expected_old_root_target = builder.add_virtual_hash256_target();
+        let expected_new_root_target = builder.add_virtual_hash256_target();
+        builder.connect_hash256(expected_old_root_target, merkle_proof_gadget.old_root);
+        builder.connect_hash256(expected_new_root_target, merkle_proof_gadget.new_root);
 
-      let mut pw = PartialWitness::new();
-      let proof_serialized = r#"
+        let num_gates = builder.num_gates();
+        // let copy_constraints = builder.copy_constraints.len();
+        let data = builder.build::<C>();
+        println!(
+            "circuit num_gates={}, quotient_degree_factor={}",
+            num_gates, data.common.quotient_degree_factor
+        );
+
+        let mut pw = PartialWitness::new();
+        let proof_serialized = r#"
       {
         "index": 5,
         "siblings": [
@@ -263,17 +262,16 @@ mod tests {
         "new_root": "c7d129a209e40611a4cc44632f38c6fd577b4329c27dae5a651d2f67c715a618"
       }
       "#;
-      let proof =
-          serde_json::from_str::<DeltaMerkleProof256>(proof_serialized).unwrap();
-      merkle_proof_gadget.set_witness_from_proof(&mut pw, &proof);
-      pw.set_hash256_target(&expected_old_root_target, &proof.old_root.0);
-      pw.set_hash256_target(&expected_new_root_target, &proof.new_root.0);
+        let proof = serde_json::from_str::<DeltaMerkleProof256>(proof_serialized).unwrap();
+        merkle_proof_gadget.set_witness_from_proof(&mut pw, &proof);
+        pw.set_hash256_target(&expected_old_root_target, &proof.old_root.0);
+        pw.set_hash256_target(&expected_new_root_target, &proof.new_root.0);
 
-      let start_time = std::time::Instant::now();
+        let start_time = std::time::Instant::now();
 
-      let proof = data.prove(pw).unwrap();
-      let duration_ms = start_time.elapsed().as_millis();
-      println!("proved in {}ms", duration_ms);
-      assert!(data.verify(proof).is_ok());
+        let proof = data.prove(pw).unwrap();
+        let duration_ms = start_time.elapsed().as_millis();
+        println!("proved in {}ms", duration_ms);
+        assert!(data.verify(proof).is_ok());
     }
 }
