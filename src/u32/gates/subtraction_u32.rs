@@ -1,4 +1,4 @@
-use alloc::boxed::Box;
+
 use alloc::string::String;
 use alloc::vec::Vec;
 use alloc::{format, vec};
@@ -12,7 +12,9 @@ use plonky2::gates::packed_util::PackedEvaluableBase;
 use plonky2::gates::util::StridedConstraintConsumer;
 use plonky2::hash::hash_types::RichField;
 use plonky2::iop::ext_target::ExtensionTarget;
-use plonky2::iop::generator::{GeneratedValues, SimpleGenerator, WitnessGenerator};
+use plonky2::iop::generator::{
+    GeneratedValues, SimpleGenerator, WitnessGeneratorRef,
+};
 use plonky2::iop::target::Target;
 use plonky2::iop::wire::Wire;
 use plonky2::iop::witness::{PartitionWitness, Witness, WitnessWrite};
@@ -22,6 +24,7 @@ use plonky2::plonk::vars::{
     EvaluationTargets, EvaluationVars, EvaluationVarsBase, EvaluationVarsBaseBatch,
     EvaluationVarsBasePacked,
 };
+use plonky2::util::serialization::{Buffer, IoResult};
 
 /// A gate to perform a subtraction on 32-bit limbs: given `x`, `y`, and `borrow`, it returns
 /// the result `x - y - borrow` and, if this underflows, a new `borrow`. Inputs are not range-checked.
@@ -85,6 +88,17 @@ impl<F: RichField + Extendable<D>, const D: usize> U32SubtractionGate<F, D> {
 impl<F: RichField + Extendable<D>, const D: usize> Gate<F, D> for U32SubtractionGate<F, D> {
     fn id(&self) -> String {
         format!("{self:?}")
+    }
+
+    fn serialize(&self, _dst: &mut Vec<u8>) -> IoResult<()> {
+        todo!()
+    }
+
+    fn deserialize(_src: &mut Buffer) -> IoResult<Self>
+    where
+        Self: Sized,
+    {
+        todo!()
     }
 
     fn eval_unfiltered(&self, vars: EvaluationVars<F, D>) -> Vec<F::Extension> {
@@ -186,10 +200,10 @@ impl<F: RichField + Extendable<D>, const D: usize> Gate<F, D> for U32Subtraction
         constraints
     }
 
-    fn generators(&self, row: usize, _local_constants: &[F]) -> Vec<Box<dyn WitnessGenerator<F>>> {
+    fn generators(&self, row: usize, _local_constants: &[F]) -> Vec<WitnessGeneratorRef<F>> {
         (0..self.num_ops)
             .map(|i| {
-                let g: Box<dyn WitnessGenerator<F>> = Box::new(
+                let g: WitnessGeneratorRef<F> = WitnessGeneratorRef::new(
                     U32SubtractionGenerator {
                         gate: *self,
                         row,
@@ -273,6 +287,10 @@ struct U32SubtractionGenerator<F: RichField + Extendable<D>, const D: usize> {
 impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F>
     for U32SubtractionGenerator<F, D>
 {
+    fn id(&self) -> String {
+        format!("u32_subtraction_{}_{}", self.row, self.i)
+    }
+
     fn dependencies(&self) -> Vec<Target> {
         let local_target = |column| Target::wire(self.row, column);
 
@@ -328,6 +346,17 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F>
             let wire = local_wire(self.gate.wire_ith_output_jth_limb(self.i, j));
             out_buffer.set_wire(wire, output_limb);
         }
+    }
+
+    fn serialize(&self, _dst: &mut Vec<u8>) -> IoResult<()> {
+        todo!()
+    }
+
+    fn deserialize(_src: &mut Buffer) -> IoResult<Self>
+    where
+        Self: Sized,
+    {
+        todo!()
     }
 }
 
