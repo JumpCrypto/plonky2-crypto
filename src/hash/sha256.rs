@@ -324,29 +324,15 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderHashSha2<F, D>
         state[5] = self.add_u32_lo(state[5], f);
         state[6] = self.add_u32_lo(state[6], g);
         state[7] = self.add_u32_lo(state[7], h);
-        
+
         // round 2
         let zero = self.constant_u32(0);
         let cx80 = self.constant_u32(0x80000000);
         let c512 = self.constant_u32(512);
 
         let mut w: [U32Target; 16] = [
-            cx80,
-            zero,
-            zero,
-            zero,
-            zero,
-            zero,
-            zero,
-            zero,
-            zero,
-            zero,
-            zero,
-            zero,
-            zero,
-            zero,
-            zero,
-            c512,
+            cx80, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero,
+            zero, c512,
         ];
 
         // Initialize working variables to current hash value
@@ -410,76 +396,75 @@ mod tests {
     use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
     use sha2::{Digest, Sha256};
 
+    use crate::hash::merkle_utils::Hash256;
     use crate::hash::sha256::{CircuitBuilderHashSha2, WitnessHashSha2};
     use crate::hash::{CircuitBuilderHash, WitnessHash};
-    use crate::hash::merkle_utils::{Hash256};
     const SHA256_BLOCK: usize = 512;
 
     #[test]
     fn test_sha256_two_to_one() {
-
         let tests = [
             [
-              "44205ea3a71ee1cbd02eef7b084a409450c21d11a3b41769f02bb3e2dd89d5e2",
-              "8ecf785b86dd1715d4c193f280a118b82200742f102bf1e59a4a65194a126f03",
-              "a452e23aab1e4baae2e3da7c66da43954038e6505dc5b1cb24c8b5d95cf7634c"
+                "44205ea3a71ee1cbd02eef7b084a409450c21d11a3b41769f02bb3e2dd89d5e2",
+                "8ecf785b86dd1715d4c193f280a118b82200742f102bf1e59a4a65194a126f03",
+                "a452e23aab1e4baae2e3da7c66da43954038e6505dc5b1cb24c8b5d95cf7634c",
             ],
             [
-              "42f584ee07afb6754770ea07fc7f498cb7200ba89eb67361a7f2564612040cd3",
-              "09e0ed078a0113619c033eec41b65e3168394dc377998bc13481b5f1942f7119",
-              "2096622ca7f5aeda8d4c9a9cd4523e1bb9ea09e661f092f515c0c2cbaadcc2c6"
+                "42f584ee07afb6754770ea07fc7f498cb7200ba89eb67361a7f2564612040cd3",
+                "09e0ed078a0113619c033eec41b65e3168394dc377998bc13481b5f1942f7119",
+                "2096622ca7f5aeda8d4c9a9cd4523e1bb9ea09e661f092f515c0c2cbaadcc2c6",
             ],
             [
-              "8560e7d4c6e014b01b70bf5e1e2ffaa1e4115c9d21eb685b796b172872b71150",
-              "3d38f5e8fc6c4612f27932b009bea0fd41a99c30af7a14a1e5316d9bbd5a4df6",
-              "eab6fce22d0679c304d7419cf0746552921b31245d715171a5ec7c9caf81f084"
+                "8560e7d4c6e014b01b70bf5e1e2ffaa1e4115c9d21eb685b796b172872b71150",
+                "3d38f5e8fc6c4612f27932b009bea0fd41a99c30af7a14a1e5316d9bbd5a4df6",
+                "eab6fce22d0679c304d7419cf0746552921b31245d715171a5ec7c9caf81f084",
             ],
             [
-              "7c909a4734e36fd67e11cd97a9a4222795672690f3eb081a2dd43a413ba6490c",
-              "39a08a837c5bfef00ebb6e3b72f7fc5a8275f13fb5d5a86f03541ebf5ee8edec",
-              "f537f1e2ac17a2af3524b7e3fc81ca88adcee65906236dab22250e071924e527"
+                "7c909a4734e36fd67e11cd97a9a4222795672690f3eb081a2dd43a413ba6490c",
+                "39a08a837c5bfef00ebb6e3b72f7fc5a8275f13fb5d5a86f03541ebf5ee8edec",
+                "f537f1e2ac17a2af3524b7e3fc81ca88adcee65906236dab22250e071924e527",
             ],
             [
-              "130151db7ac8036300c80c58a37de8119719ce60600b6e009d09df3a71d5f741",
-              "a6bf923dbbcaae29701d82e0a1492ffe388aa14bd3e6ffbfa834aa9b23ad154a",
-              "e70822e27d35acff57fc210d451aba171285025ac2fa77911e893427a8430b25"
+                "130151db7ac8036300c80c58a37de8119719ce60600b6e009d09df3a71d5f741",
+                "a6bf923dbbcaae29701d82e0a1492ffe388aa14bd3e6ffbfa834aa9b23ad154a",
+                "e70822e27d35acff57fc210d451aba171285025ac2fa77911e893427a8430b25",
             ],
             [
-              "9992ff1b7ff438d5132b2b5ddd875c10ca62bcb46f681ef228548abdcd6db5c1",
-              "4080eca86a5ea164518fc7426dc793ce5c9f95831bc8a97b2f06bc53722c78bb",
-              "1bdbe0e67971989362b44c66f7ff26eea7d6c7f5f791d91e96bfa46a6934b97b"
+                "9992ff1b7ff438d5132b2b5ddd875c10ca62bcb46f681ef228548abdcd6db5c1",
+                "4080eca86a5ea164518fc7426dc793ce5c9f95831bc8a97b2f06bc53722c78bb",
+                "1bdbe0e67971989362b44c66f7ff26eea7d6c7f5f791d91e96bfa46a6934b97b",
             ],
             [
-              "2a6f3577676eb6493d62268cf402f39f432490f8ca64d2323eab7ffb8fa5e239",
-              "a004b81f69f9b6694fad09f0193e9120789d4e870681f436a97a2eef9089a3e2",
-              "3dd8900540834a3fe28407796f128a21dd4c947b6b991ed14d6167ae4fc29cc3"
+                "2a6f3577676eb6493d62268cf402f39f432490f8ca64d2323eab7ffb8fa5e239",
+                "a004b81f69f9b6694fad09f0193e9120789d4e870681f436a97a2eef9089a3e2",
+                "3dd8900540834a3fe28407796f128a21dd4c947b6b991ed14d6167ae4fc29cc3",
             ],
             [
-              "7b4e5361bddc8029f76c3fead78e0a0a49e02dd40666cdff03ea40609de3c8d9",
-              "bf7b76a80a3a70151640263f13bb62f72d66f0075f03b64e51aaec781b36d8c9",
-              "809cf278ede0e210b29e7ce57b12a058d5d1f78be62a16df0c301995be7e7a5d"
+                "7b4e5361bddc8029f76c3fead78e0a0a49e02dd40666cdff03ea40609de3c8d9",
+                "bf7b76a80a3a70151640263f13bb62f72d66f0075f03b64e51aaec781b36d8c9",
+                "809cf278ede0e210b29e7ce57b12a058d5d1f78be62a16df0c301995be7e7a5d",
             ],
             [
-              "a52ae0c843df054f6a9489a743f293a74b7fe21f14bff5d35e9c9ec4fe336522",
-              "e3e6379804432520b7eba2a7b46d0b016a4025f32da7cb8aa0003aaf57dab15c",
-              "f56647e8f500efaafe8aaaf9a90b142685896cba145a06a6bc9853d9765079b8"
+                "a52ae0c843df054f6a9489a743f293a74b7fe21f14bff5d35e9c9ec4fe336522",
+                "e3e6379804432520b7eba2a7b46d0b016a4025f32da7cb8aa0003aaf57dab15c",
+                "f56647e8f500efaafe8aaaf9a90b142685896cba145a06a6bc9853d9765079b8",
             ],
             [
-              "386d9d8e6851f030ac2f510b6a8ebcc2f00e16a9cc7b7707d7d65f8a95ae82f3",
-              "bb2b56422cd46210f5ab0c53527e8bf7ef71ad723a77a2cba0d990da15c9bde8",
-              "d4d029cc7fbc6eba897d5659bb4d0298f9d3609c383526de67ab15b26fa95ad2"
+                "386d9d8e6851f030ac2f510b6a8ebcc2f00e16a9cc7b7707d7d65f8a95ae82f3",
+                "bb2b56422cd46210f5ab0c53527e8bf7ef71ad723a77a2cba0d990da15c9bde8",
+                "d4d029cc7fbc6eba897d5659bb4d0298f9d3609c383526de67ab15b26fa95ad2",
             ],
             [
-              "6e326b458d8bbef8b5a592e939d8bfa2dffb769a5f616034fb0cbf1267d4a600",
-              "d5b60f7116771c9033a32bd2ccd22912d97bd3cf30d526fdcaff9f1bc9453397",
-              "6c915b5095aca9df36491281c04a4f127b9fd81b4362742f07314d945b44582a"
+                "6e326b458d8bbef8b5a592e939d8bfa2dffb769a5f616034fb0cbf1267d4a600",
+                "d5b60f7116771c9033a32bd2ccd22912d97bd3cf30d526fdcaff9f1bc9453397",
+                "6c915b5095aca9df36491281c04a4f127b9fd81b4362742f07314d945b44582a",
             ],
             [
-              "4af3eaf1108b48e0df66988876570f2044db09a0cad061da7d2448871fc52cb6",
-              "cf5c4c57391fa60fbd613b2bdd5ddb5da9435239d073f2cdd265d0788e0b9cec",
-              "54a342f852b7d41a5aab4a6a73cfc9adbc3b5fc42303627dbd604eede98e334f"
-            ]
-          ];
+                "4af3eaf1108b48e0df66988876570f2044db09a0cad061da7d2448871fc52cb6",
+                "cf5c4c57391fa60fbd613b2bdd5ddb5da9435239d073f2cdd265d0788e0b9cec",
+                "54a342f852b7d41a5aab4a6a73cfc9adbc3b5fc42303627dbd604eede98e334f",
+            ],
+        ];
 
         // build circuit once
         const D: usize = 2;
@@ -493,7 +478,7 @@ mod tests {
         let expected_output_target = builder.add_virtual_hash256_target();
         let output_target = builder.two_to_one_sha256(left_target, right_target);
         builder.connect_hash256(output_target, expected_output_target);
-        
+
         let num_gates = builder.num_gates();
         // let copy_constraints = builder.copy_constraints.len();
         let copy_constraints = "<private>";
@@ -503,21 +488,17 @@ mod tests {
             num_gates, copy_constraints, data.common.quotient_degree_factor
         );
 
-
-
         for t in tests {
             let left = Hash256::from_str(t[0]).unwrap();
             let right = Hash256::from_str(t[1]).unwrap();
             let expected_output = Hash256::from_str(t[2]).unwrap();
-
-
 
             // test circuit
             let mut pw = PartialWitness::new();
             pw.set_hash256_target(&left_target, &left.0);
             pw.set_hash256_target(&right_target, &right.0);
             pw.set_hash256_target(&expected_output_target, &expected_output.0);
-            
+
             let proof = data.prove(pw).unwrap();
             // println!("sha256 proof.public_inputs =\n{:08x?}", proof.public_inputs);
             assert!(data.verify(proof).is_ok());

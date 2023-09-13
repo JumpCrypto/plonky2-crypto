@@ -2,7 +2,11 @@ use plonky2::hash::hash_types::RichField;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
-use super::{sha256::WitnessHashSha2, sha256_merkle::{MerkleProofSha256Gadget, DeltaMerkleProofSha256Gadget}, WitnessHash};
+use super::{
+    sha256::WitnessHashSha2,
+    sha256_merkle::{DeltaMerkleProofSha256Gadget, MerkleProofSha256Gadget},
+    WitnessHash,
+};
 
 #[serde_as]
 #[derive(Serialize, Deserialize, PartialEq, Clone, Copy)]
@@ -101,8 +105,6 @@ impl MerkleProofSha256Gadget {
         }
     }
 }
-
-
 
 impl DeltaMerkleProofSha256Gadget {
     pub fn set_witness_from_proof<F: RichField, W: WitnessHashSha2<F>>(

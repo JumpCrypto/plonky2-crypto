@@ -1,3 +1,5 @@
+**Fork: updated to compile and testable with latest versions of plonky2**
+
 # Crypto Gadgets for Plonky2
 
 A collection of efficient gadgets for Plonky2.
