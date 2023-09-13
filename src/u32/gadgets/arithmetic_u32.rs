@@ -1,6 +1,7 @@
 use alloc::vec;
 use alloc::vec::Vec;
 use core::marker::PhantomData;
+use plonky2::plonk::circuit_data::CommonCircuitData;
 
 use plonky2::field::extension::Extendable;
 use plonky2::hash::hash_types::RichField;
@@ -9,7 +10,6 @@ use plonky2::iop::target::Target;
 use plonky2::iop::witness::{PartitionWitness, Witness};
 use plonky2::plonk::circuit_builder::CircuitBuilder;
 use plonky2::util::serialization::{Buffer, IoResult};
-
 
 use crate::u32::gates::add_many_u32::U32AddManyGate;
 use crate::u32::gates::arithmetic_u32::U32ArithmeticGate;
@@ -246,7 +246,7 @@ struct SplitToU32Generator<F: RichField + Extendable<D>, const D: usize> {
     _phantom: PhantomData<F>,
 }
 
-impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F>
+impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F, D>
     for SplitToU32Generator<F, D>
 {
     fn id(&self) -> String {
@@ -267,11 +267,11 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F>
         out_buffer.set_u32_target(self.high, high);
     }
 
-    fn serialize(&self, _dst: &mut Vec<u8>) -> IoResult<()> {
+    fn serialize(&self, _dst: &mut Vec<u8>, c: &CommonCircuitData<F, D>) -> IoResult<()> {
         todo!()
     }
 
-    fn deserialize(_src: &mut Buffer) -> IoResult<Self>
+    fn deserialize(_src: &mut Buffer, c: &CommonCircuitData<F, D>) -> IoResult<Self>
     where
         Self: Sized,
     {
