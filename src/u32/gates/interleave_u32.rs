@@ -8,14 +8,12 @@ use plonky2::gates::packed_util::PackedEvaluableBase;
 use plonky2::gates::util::StridedConstraintConsumer;
 use plonky2::hash::hash_types::RichField;
 use plonky2::iop::ext_target::ExtensionTarget;
-use plonky2::iop::generator::{
-    GeneratedValues, SimpleGenerator, WitnessGeneratorRef,
-};
+use plonky2::iop::generator::{GeneratedValues, SimpleGenerator, WitnessGeneratorRef};
 use plonky2::iop::target::Target;
 use plonky2::iop::wire::Wire;
 use plonky2::iop::witness::{PartitionWitness, Witness, WitnessWrite};
 use plonky2::plonk::circuit_builder::CircuitBuilder;
-use plonky2::plonk::circuit_data::CircuitConfig;
+use plonky2::plonk::circuit_data::{CircuitConfig, CommonCircuitData};
 use plonky2::plonk::plonk_common::{reduce_with_powers, reduce_with_powers_ext_circuit};
 use plonky2::plonk::vars::{
     EvaluationTargets, EvaluationVars, EvaluationVarsBase, EvaluationVarsBaseBatch,
@@ -185,10 +183,10 @@ impl<F: RichField + Extendable<D>, const D: usize> Gate<F, D> for U32InterleaveG
         self.eval_unfiltered_base_batch_packed(vars_base)
     }
 
-    fn generators(&self, row: usize, _local_constants: &[F]) -> Vec<WitnessGeneratorRef<F>> {
+    fn generators(&self, row: usize, _local_constants: &[F]) -> Vec<WitnessGeneratorRef<F, D>> {
         (0..self.num_ops)
             .map(|i| {
-                let g: WitnessGeneratorRef<F> = WitnessGeneratorRef::new(
+                let g: WitnessGeneratorRef<F, D> = WitnessGeneratorRef::new(
                     U32InterleaveGenerator {
                         gate: *self,
                         row,
@@ -217,11 +215,11 @@ impl<F: RichField + Extendable<D>, const D: usize> Gate<F, D> for U32InterleaveG
         self.num_ops * (Self::NUM_BITS + 1 + 1)
     }
 
-    fn serialize(&self, _dst: &mut Vec<u8>) -> IoResult<()> {
+    fn serialize(&self, _dst: &mut Vec<u8>, _: &CommonCircuitData<F, D>) -> IoResult<()> {
         todo!()
     }
 
-    fn deserialize(_src: &mut Buffer) -> IoResult<Self>
+    fn deserialize(_src: &mut Buffer, _: &CommonCircuitData<F, D>) -> IoResult<Self>
     where
         Self: Sized,
     {
@@ -275,7 +273,9 @@ pub struct U32InterleaveGenerator {
 }
 
 // Populate the bit wires and the x_interleaved wire, given that the x wire's value has been set
-impl<F: RichField> SimpleGenerator<F> for U32InterleaveGenerator {
+impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F, D>
+    for U32InterleaveGenerator
+{
     fn id(&self) -> String {
         format!("u32_interleave_{}_{}", self.row, self.i)
     }
@@ -317,11 +317,11 @@ impl<F: RichField> SimpleGenerator<F> for U32InterleaveGenerator {
         out_buffer.set_wire(x_interleaved_wire, F::from_canonical_u64(x_interleaved));
     }
 
-    fn serialize(&self, _dst: &mut Vec<u8>) -> IoResult<()> {
+    fn serialize(&self, _dst: &mut Vec<u8>, _: &CommonCircuitData<F, D>) -> IoResult<()> {
         todo!()
     }
 
-    fn deserialize(_src: &mut Buffer) -> IoResult<Self>
+    fn deserialize(_src: &mut Buffer, _: &CommonCircuitData<F, D>) -> IoResult<Self>
     where
         Self: Sized,
     {
